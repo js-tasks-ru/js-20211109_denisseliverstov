@@ -10,7 +10,7 @@ export function sortStrings(arr, param = 'asc') {
         if (param === 'asc') {
             return a.localeCompare(b, ['ru-RU-u-kf-upper', 'en-US-u-kf-upper']);
         } else if (param === 'desc') {
-            return b.localeCompare(a);
+            return b.localeCompare(a, ['ru-RU-u-kf-upper', 'en-US-u-kf-upper']);
         }
     });
     return sortArray;
