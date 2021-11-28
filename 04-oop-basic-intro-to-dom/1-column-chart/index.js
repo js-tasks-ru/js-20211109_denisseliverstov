@@ -1,59 +1,36 @@
 export default class ColumnChart {
+    element;
+    subElement = {};
+    chartHeight= 50;
+
     constructor(
         {
             data = [],
-            label = "Test",
-            value = 344,
-            link = "",            
-            chartHeight = 50,
-            formatHeading
-        } = {
-                data: [],
-                label: "Test",
-                value: 344,
-                link: "",
-                chartHeight: 50,
-                formatHeading: data => `$${data}`             
-            }
+            label = "",
+            value = 0,
+            link = "",
+            formatHeading = data => data
+        } = {}
     ) {
         this.data = data;
         this.label = label;
-        this.value = value;
+        this.value = formatHeading(value);
         this.link = link;
-        this.chartHeight = chartHeight;
-        this.formatHeading = formatHeading;
+
         this.render();
-        this.initEventListeners();
-        this.remove();
-        this.destroy();
     }
 
-    getTemplate(newData) {
-        function getColumnProps(data) {
-            const maxValue = Math.max(...data);
-            const scale = 50 / maxValue;
-
-            return data.map(item => {
-                return {
-                    percent: (item / maxValue * 100).toFixed(0) + '%',
-                    value: String(Math.floor(item * scale))
-                };
-            });
-        }
-        const arrColumn = newData ? getColumnProps(newData) : getColumnProps(this.data);
+    get template() {
         return `
-        this.chartHeight = 50;
-            <div class="column-chart ${(this.data.length === 0) ? 'column-chart_loading' : ''}" style="--chart-height: ${this.chartHeight}">
+            <div class="column-chart column-chart_loading" style="--chart-height: ${this.chartHeight}">
                 <div class="column-chart__title">
                     Total ${this.label}
-                    ${this.link ? `<a href="${this.link}" class="column-chart__link">View all</a>` : ''}
+                    ${this.getLink()}
                 </div>
                 <div class="column-chart__container">
-                    <div data-element="header" class="column-chart__header">${this.formatHeading ? this.formatHeading(this.value) : `${this.value}`}</div>
+                    <div data-element="header" class="column-chart__header">${this.value}</div>
                     <div div data-element="body" class="column-chart__chart">
-                    ${(arrColumn.map(item => {
-            return `<div style="--value: ${item.value}" data-tooltip="${item.percent}"></div>`
-        })).join('')}
+                        ${this.getColumnBody()}
                     </div>
                 </div>
             </div>
@@ -62,25 +39,59 @@ export default class ColumnChart {
 
     render() {
         const element = document.createElement('div');
-        element.innerHTML = this.getTemplate();
+        element.innerHTML = this.template;
         this.element = element.firstElementChild;
+
+        if (this.data.length) {
+            this.element.classList.remove('column-chart_loading');
+        }
+
+        this.subElement = this.getSubElements(this.element);
     }
 
-    initEventListeners() {
+    getSubElements(element) {
+        const result = {};
+        const elements = element.querySelectorAll('[data-element]');
+
+        for (const subElement of elements) {
+            const name = subElement.dataset.element;
+
+            result[name] = subElement;
+        }
+        console.log('SubElement ', result);
+        return result;
+    }
+
+    getLink() {
+        return this.link ? `<a class="column-chart__link" href="${this.link}">View all</a>` : '';
+    }
+
+    getColumnBody() {
+        const maxValue = Math.max(...this.data);
+        const scale = this.chartHeight / maxValue;
+
+        return this.data.map(item => {
+            const percent = (item/maxValue *100).toFixed(0);
+
+            return `<div style="--value: ${Math.floor(item * scale)}" data-tooltip="${percent}%"></div>`;
+        }).join('');
+    }
+
+    update(data) {
+        this.data = data;
+        this.subElement.body.innerHTML = this.getColumnBody();
     }
 
     remove() {
-        this.element.remove();
+        if (this.element) {
+            this.element.remove();
+        }        
     }
 
     destroy() {
         this.remove();
-    }
-
-    update(newData) {
-        const element = document.createElement('div');
-        element.innerHTML = this.getTemplate(newData);
-        this.element = element.firstElementChild;
-    }
+        this.element = null;
+        this.subElements = {};
+    }    
 
 }
